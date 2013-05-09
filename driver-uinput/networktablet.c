@@ -1,4 +1,5 @@
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -86,10 +87,19 @@ void send_event(int device, int type, int code, int value)
 }
 
 
-int main(void)
+int main(int argc, int *argv[])
 {
 	int device, socket;
 	struct event_packet ev_pkt;
+	
+	int sensitivity;
+	if(argc > 1){
+		//For simulated hover, if arg from shell accepted
+		//atoi will return 0 for invalid input, assert will catch
+		sensitivity = atoi(argv[1]);
+		assert( argc > 0 && argc < 3 && sensitivity < 32766 && sensitivity > 0);
+		printf("Simulated hover enabled at %i sensitivity\n",sensitivity);
+	}
 
 	if ((device = open("/dev/uinput", O_WRONLY | O_NONBLOCK)) < 0)
 		die("error: open");
@@ -125,10 +135,22 @@ int main(void)
 				send_event(device, EV_SYN, SYN_REPORT, 1);
 				break;
 			case EVENT_TYPE_BUTTON:
-				if (ev_pkt.button == 0)
+				//If an argument was entered it will simulate hovering below
+				//the specified pressure.
+				if(argc > 1){
+					if (ev_pkt.pressure > sensitivity){
+						//Copied from original code
+						send_event(device, EV_KEY, BTN_TOUCH, ev_pkt.down);
+					}
+					send_event(device, EV_SYN, SYN_REPORT, 1);
+					break;
+				}
+				else{
+					if (ev_pkt.button == 0)
 					send_event(device, EV_KEY, BTN_TOUCH, ev_pkt.down);
-				send_event(device, EV_SYN, SYN_REPORT, 1);
-				break;
+					send_event(device, EV_SYN, SYN_REPORT, 1);
+					break;
+				}
 
 		}
 	}
