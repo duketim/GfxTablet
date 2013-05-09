@@ -1,3 +1,11 @@
+Added command argument to simulate hover on Non-wacom style devices.
+You can set the sensitivity point at which it will ignore.
+
+$networktablet [sensitivity]
+
+For example:
+$networktablet 2800
+
 
 To be informed about updates:
 
